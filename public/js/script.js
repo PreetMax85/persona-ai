@@ -178,6 +178,18 @@ if (!tutor.status && statusEl) statusEl.style.display = 'none';
 
 document.title = `Persona AI — ${selectedTutor}`;
 
+// conversation memory: sent with every request so the mentor remembers
+const history = (() => {
+  try {
+    const saved = localStorage.getItem('chatHistory');
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+})();
+
+function saveHistory() {
+  try { localStorage.setItem('chatHistory', JSON.stringify(history)); } catch {}
+}
+
 if (history.length === 0) {
   renderWelcome();
 } else {
@@ -226,18 +238,6 @@ form.addEventListener('submit', async (e) => {
 
 // the reply currently being typed (if any) — so a new message can interrupt it
 let activeReply = null;
-
-// conversation memory: sent with every request so the mentor remembers
-const history = (() => {
-  try {
-    const saved = localStorage.getItem('chatHistory');
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-})();
-
-function saveHistory() {
-  try { localStorage.setItem('chatHistory', JSON.stringify(history)); } catch {}
-}
 
 // follow-up nudge: if the user goes quiet after a reply, the mentor
 // checks in on their own (once, until the user speaks again)
