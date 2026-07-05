@@ -10,6 +10,8 @@
   "license": "ISC",
   "description": "Chat with AI mentor personas in their authentic teaching style",
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "dotenv": "^16.4.7",
     "openai": "^4.93.0"
   }

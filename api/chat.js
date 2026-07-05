@@ -1,3 +1,5 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import OpenAI from "openai";
 
 import { 
@@ -31,6 +33,20 @@ When misuse is CLEAR:
 When misuse is NOT clear, help normally.
 `.trim();
 
+const redis = Redis.fromEnv();
+
+const ipLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "1 h"),
+  prefix: "ratelimit:ip",
+});
+
+const dailyLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.fixedWindow(18, "1 d"),
+  prefix: "ratelimit:daily",
+});
+
 const openai = new OpenAI({
   apiKey: process.env.GEMINI_API_KEY || "GEMINI_API_KEY",
   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -40,6 +56,29 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.socket.remoteAddress
+    || 'unknown';
+
+  const [{ success: dayOk }, { success: ipOk }] = await Promise.all([
+    dailyLimit.limit("global"),
+    ipLimit.limit(ip),
+  ]);
+
+  if (!dayOk) {
+    return res.status(429).json({
+      error: 'Daily quota exhausted.',
+      reply: 'Aaj ka quota khatam ho gaya, kal try karna ☕'
+    });
+  }
+
+  if (!ipOk) {
+    return res.status(429).json({
+      error: 'Rate limited.',
+      reply: 'Thoda ruk jao, ek ghante baad phir try karna.'
+    });
   }
 
   try {
