@@ -18,7 +18,6 @@ const chatBox = document.getElementById('chat-box');
 const title = document.getElementById('chat-title');
 const avatar = document.getElementById('tutor-avatar');
 const statusText = document.getElementById('status-text');
-const sendBtn = form.querySelector('button');
 
 const TUTORS = {
   'Hitesh Sir': {
@@ -182,7 +181,8 @@ document.title = `Persona AI — ${selectedTutor}`;
 const history = (() => {
   try {
     const saved = localStorage.getItem('chatHistory');
-    return saved ? JSON.parse(saved) : [];
+    const parsed = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed) ? parsed : [];
   } catch { return []; }
 })();
 
