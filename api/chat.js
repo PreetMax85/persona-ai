@@ -58,30 +58,35 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-    || req.socket.remoteAddress
-    || 'unknown';
-
-  const [{ success: dayOk }, { success: ipOk }] = await Promise.all([
-    dailyLimit.limit("global"),
-    ipLimit.limit(ip),
-  ]);
-
-  if (!dayOk) {
-    return res.status(429).json({
-      error: 'Daily quota exhausted.',
-      reply: 'Aaj ka quota khatam ho gaya, kal try karna ☕'
-    });
-  }
-
-  if (!ipOk) {
-    return res.status(429).json({
-      error: 'Rate limited.',
-      reply: 'Thoda ruk jao, ek ghante baad phir try karna.'
-    });
-  }
-
   try {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+      || req.socket.remoteAddress
+      || 'unknown';
+
+    try {
+      const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
+      const [{ success: dayOk }, { success: ipOk }] = await Promise.all([
+        Promise.race([dailyLimit.limit("global"), timeout(3000)]),
+        Promise.race([ipLimit.limit(ip), timeout(3000)]),
+      ]);
+
+      if (!dayOk) {
+        return res.status(429).json({
+          error: 'Daily quota exhausted.',
+          reply: 'Aaj ka quota khatam ho gaya, kal try karna ☕'
+        });
+      }
+
+      if (!ipOk) {
+        return res.status(429).json({
+          error: 'Rate limited.',
+          reply: 'Thoda ruk jao, ek ghante baad phir try karna.'
+        });
+      }
+    } catch {
+      // Redis unavailable — allow request through rather than blocking users
+    }
+
     const { message, persona, interrupted, partialReply, history, followUp } = req.body || {};
 
     if (followUp !== true && (!message || typeof message !== 'string' || message.trim() === '')) {
@@ -94,7 +99,6 @@ export default async function handler(req, res) {
       : system_instruction_of_HiteshSir;
 
     system_instruction += '\n\n' + MISUSE_GUARD;
-
 
     if (interrupted === true) {
       const typedSoFar = typeof partialReply === 'string' ? partialReply.slice(0, 800) : '';
