@@ -178,7 +178,11 @@ if (!tutor.status && statusEl) statusEl.style.display = 'none';
 
 document.title = `Persona AI — ${selectedTutor}`;
 
-renderWelcome();
+if (history.length === 0) {
+  renderWelcome();
+} else {
+  history.forEach(entry => addMessage(entry.content, entry.role === 'user' ? 'user' : 'bot'));
+}
 
 // --- mentor switcher ---
 const picker = document.getElementById('picker');
@@ -210,6 +214,7 @@ picker.querySelectorAll('.picker-card').forEach((card) =>
       return;
     }
     localStorage.setItem('selectedTutor', choice);
+    localStorage.removeItem('chatHistory');
     window.location.reload();
   })
 );
@@ -223,7 +228,16 @@ form.addEventListener('submit', async (e) => {
 let activeReply = null;
 
 // conversation memory: sent with every request so the mentor remembers
-const history = [];
+const history = (() => {
+  try {
+    const saved = localStorage.getItem('chatHistory');
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+})();
+
+function saveHistory() {
+  try { localStorage.setItem('chatHistory', JSON.stringify(history)); } catch {}
+}
 
 // follow-up nudge: if the user goes quiet after a reply, the mentor
 // checks in on their own (once, until the user speaks again)
@@ -260,13 +274,14 @@ async function sendMessage(userMsg) {
     partialReply = activeReply.interrupt();
     wasInterrupted = true;
     // remember what the mentor managed to say before being cut off
-    if (partialReply) history.push({ role: 'assistant', content: partialReply });
+    if (partialReply) { history.push({ role: 'assistant', content: partialReply }); saveHistory(); }
   }
 
   const userRow = addMessage(userMsg, 'user');
   const ticks = userRow.querySelector('.ticks');
   input.value = '';
   history.push({ role: 'user', content: userMsg });
+  saveHistory();
 
   await requestReply({ message: userMsg, wasInterrupted, partialReply, ticks });
 }
@@ -340,6 +355,7 @@ async function requestReply({ message = '', followUp = false, wasInterrupted = f
       await typer.finished;
       // remember the full reply, then wait to see if the user goes quiet
       history.push({ role: 'assistant', content: typer.getTyped() });
+      saveHistory();
       if (followUp) nudgeUsed = true;
       scheduleNudge();
     }
