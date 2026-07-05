@@ -1,0 +1,16 @@
+{
+  "name": "persona-ai",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.js"
+  },
+  "keywords": [],
+  "author": "Preet",
+  "license": "ISC",
+  "description": "Chat with AI mentor personas in their authentic teaching style",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "openai": "^4.93.0"
+  }
+}
