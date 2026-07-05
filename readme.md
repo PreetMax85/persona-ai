@@ -9,6 +9,7 @@ Chat with AI versions of **Hitesh Choudhary** and **Piyush Garg** in their authe
 - Context-aware conversation (remembers last 20 messages)
 - Streaming responses with a human-like typewriter effect
 - Misuse detection — prompt injection and jailbreak attempts get a playful roast instead of compliance
+- Rate limiting — per-IP (5/hr) and global daily budget (18/day) via Upstash Redis
 - Clean dark UI, responsive, no framework
 
 ## Tech Stack
@@ -17,6 +18,7 @@ Chat with AI versions of **Hitesh Choudhary** and **Piyush Garg** in their authe
 |---|---|
 | Frontend | HTML, CSS, JavaScript (vanilla, no framework) |
 | AI | Google Gemini 2.5 Flash via OpenAI SDK |
+| Rate Limiting | Upstash Redis + @upstash/ratelimit |
 | Deployment | Vercel (static + serverless function) |
 
 ## How the Personas Were Built
@@ -60,9 +62,9 @@ cd persona-ai
 # Install dev dependencies
 npm install
 
-# Create .env with your Gemini API key
+# Create .env with your API keys
 cp .env.example .env
-# Edit .env: GEMINI_API_KEY=your_key_here
+# Edit .env: GEMINI_API_KEY, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
 
 # Start dev server
 npm run dev
@@ -79,4 +81,4 @@ Open `http://localhost:3000`.
 
 ## Deployment
 
-Push to GitHub, connect the repo to Vercel. The `vercel.json` handles serving static files from `public/` and routing `/api/chat` to the serverless function. Make sure `GEMINI_API_KEY` is set in Vercel's environment variables.
+Push to GitHub, connect the repo to Vercel. The `vercel.json` handles serving static files from `public/` and routing `/api/chat` to the serverless function. Make sure `GEMINI_API_KEY`, `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN` are set in Vercel's environment variables.
